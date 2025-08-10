@@ -1,9 +1,31 @@
+# Setup steps performed before the deployment process.
+# 1. Create a GKE cluster where our application will run.
+# 2. Create an Artifact Registry named 'my-gke-repo' to store Docker images.
+# 3. Create a Service Account to authenticate GCP with GitHub and assign necessary permissions:
+#    - Artifact Registry Writer
+#    - Kubernetes Engine Admin
+#    - Service Account User
+# 4. Update application port from 8000 to 3000 in index.js and Dockerfile.
+# 5. Create a folder named 'backend' and place backend-related files there.
+# 6. Create a React frontend application.
+# 7. Update React frontend to fetch two endpoints from the Node.js backend and update UI via hooks (backendData).
+# 8. Create 'nginx.conf' inside the frontend to serve the app through NGINX.
+# 9. Create 'deploy.yml' to automate deployment to GKE.
+# 10. Create a Dockerfile and .dockerignore for the frontend.
+# 11. Create a folder named 'k8s' containing:
+#       - frontend-deployment.yaml
+#       - frontend-service.yaml
+
 name: Deploy Nodejs to GKE using GitHub
+
+# Defines the name of the GitHub Actions workflow for deploying a Node.js + React app to Google Kubernetes Engine
 
 on:
   push:
     branches:
       - main
+      
+# Triggers the workflow when code is pushed to the 'main' branch
 
 env:
   PROJECT_ID: github-actions-111
@@ -14,6 +36,8 @@ env:
   BACKEND_IMAGE: backend
   NAMESPACE: default
 
+# Environment variables for project, cluster, repository, images, and namespace
+
 jobs:
   deploy:
     name: Deploy Nodejs to GKE using GitHub
@@ -21,22 +45,28 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
+      
+    # The 'deploy' job runs on Ubuntu and has permissions for reading repo contents and writing ID tokens
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
+        # Pulls the latest code from the repository to the GitHub Actions runner
 
       - name: Set up Cloud CLI
         uses: google-github-actions/setup-gcloud@v1
+        # Installs and configures the Google Cloud CLI on the runner
 
       - name: Authenticate to Google Cloud
         id: auth
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
+        # Authenticates to GCP using the service account key stored as a GitHub secret
 
       - name: Configure Docker
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
+        # Configures Docker to authenticate with Artifact Registry in the 'us-central1' region
 
       - name: Build and Push Frontend Image
         run: |
@@ -44,6 +74,7 @@ jobs:
             -t us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/${{ env.FRONTEND_IMAGE }}:latest \
             -f frontend/Dockerfile frontend
           docker push us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/${{ env.FRONTEND_IMAGE }}:latest
+        # Builds the frontend Docker image from 'frontend/Dockerfile' and pushes it to Artifact Registry
 
       - name: Build and Push Backend Image
         run: |
@@ -51,12 +82,15 @@ jobs:
             -t us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/${{ env.BACKEND_IMAGE }}:latest \
             -f backend/Dockerfile backend
           docker push us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/${{ env.BACKEND_IMAGE }}:latest
+        # Builds the backend Docker image from 'backend/Dockerfile' and pushes it to Artifact Registry
 
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v1
         with:
           cluster_name: ${{ env.GKE_CLUSTER }}
           location: ${{ env.GKE_ZONE }}
+        # Fetches GKE cluster credentials so kubectl can connect to the cluster
 
       - name: Deploy to GKE
         run: kubectl apply -f k8s/
+        # Applies all Kubernetes manifests from the 'k8s' folder to the cluster
