@@ -42,14 +42,14 @@ jobs:
         run: |
           docker build \
             -t us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/${{ env.FRONTEND_IMAGE }}:latest \
-            -f frontend/src/Dockerfile frontend/src
+            -f frontend/src/Dockerfile .
           docker push us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/${{ env.FRONTEND_IMAGE }}:latest
 
       - name: Build and Push Backend Image
         run: |
           docker build \
             -t us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/${{ env.BACKEND_IMAGE }}:latest \
-            -f backend/Dockerfile backend
+            -f backend/Dockerfile .
           docker push us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/${{ env.BACKEND_IMAGE }}:latest
 
       - name: Get GKE credentials
