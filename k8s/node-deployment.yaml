@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: node
-        image: us-central1-docker.pkg.dev/iapv123/repo/node:latest
+        image: us-central1-docker.pkg.dev/github-actions-111/my-gke-repo/frontend:latest
         ports:
         - containerPort: 8080
