@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
 function App() {
-  const [backendData, setBackendData] = useState([loading backend data...]);
-  const [proxyData, setProxyData] = useState([loading proxy data...]);
+  const [backendData, setBackendData] = useState("loading backend data...");
+  const [proxyData, setProxyData] = useState("loading proxy data...");
 
   useEffect(() => {
     fetch('/api/data')
