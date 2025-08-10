@@ -1,0 +1,65 @@
+name: Deploy Nodejs to GKE using GitHub
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: github-actions-111
+  GKE_ZONE: us-central1
+  GKE_CLUSTER: cluster
+  REPOSITORY_NAME: my-gke-repo
+  FRONTEND_IMAGE: frontend
+  BACKEND_IMAGE: frontend
+  NAMESPACE: default
+
+jobs:
+  deploy:
+    name: Deploy Nodejs to GKE using GitHub
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        # Checks out the repository code to the runner
+
+      - name: Set up Cloud CLI
+        uses: google-github-actions/setup-gcloud@v1
+        # Sets up the Google Cloud CLI for subsequent steps
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+        # Configures Docker to authenticate with the Google Artifact Registry
+
+      - name: Build and Push Frontend Image
+        run: |
+          docker build -t us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/${{ env.FRONTEND_IMAGE }}:latest ./frontend
+          docker push us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/${{ env.FRONTEND_IMAGE }}:latest
+        # Builds and pushes the frontend Docker image to the registry
+
+      - name: Build and Push Backend Image
+        run: |
+          docker build -t us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/${{ env.BACKEND_IMAGE }}:latest ./backend
+          docker push us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY_NAME }}/${{ env.BACKEND_IMAGE }}:latest
+        # Builds and pushes the backend Docker image to the registry
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GKE_ZONE }}
+        # Retrieves credentials for the specified GKE cluster
+
+      - name: Deploy to GKE
+        run: kubectl apply -f k8s/
+        # Deploys the application to the GKE cluster using Kubernetes manifests
